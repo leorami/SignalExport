@@ -7,7 +7,7 @@ name = "signal-export"
 version = "0.1.0"
 description = "Signal Desktop export to a responsive HTML viewer"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 authors = [
   { name = "Leo A. Ramirez Jr.", email = "leo.ramirez@alumni.stanford.edu" }
 ]
