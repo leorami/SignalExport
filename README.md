@@ -14,6 +14,10 @@ Current limitations (intentional, for safety and clarity):
 - Sidebar avatars are disabled for now (initials-only).
 - In-chat image thumbnails are disabled; image attachments are shown as archive icons with a tooltip.
 
+## Screenshot
+
+![Signal Export UI](src/signal_export/assets/Signal%20Export%20Screenshot.png)
+
 ## Project layout
 
 ```
