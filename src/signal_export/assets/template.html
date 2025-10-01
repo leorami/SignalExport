@@ -148,6 +148,22 @@ function renderThread(t){
       day.appendChild(chip); container.appendChild(day);
     }
 
+    // Render call events as centered chips, not bubbles
+    if (m.kind === 'call'){
+      const row = document.createElement('div');
+      row.className = 'call' + (m.missed ? ' missed' : '');
+      const pill = document.createElement('div'); pill.className = 'pill';
+      const icon = document.createElement('span'); icon.className = 'icon';
+      icon.textContent = m.video ? '📹' : '📞';
+      const txt = document.createElement('span'); txt.textContent = m.body;
+      const sep = document.createElement('span'); sep.textContent = ' • ';
+      const ts = document.createElement('span'); ts.className = 'clock'; ts.textContent = timeText(m.ts);
+      pill.appendChild(icon); pill.appendChild(txt); pill.appendChild(sep); pill.appendChild(ts);
+      row.appendChild(pill);
+      container.appendChild(row);
+      return;
+    }
+
     const wrap = document.createElement('div'); wrap.className = 'msg' + (m.out ? ' me' : '');
 
     if (m.group && !m.out){

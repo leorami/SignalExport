@@ -245,6 +245,17 @@
     font-size:11px; margin-top:6px; opacity:.75;
   }
   
+  /* Call event chips */
+  .call{ display:flex; justify-content:center; margin:10px 0; }
+  .call .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    background:#eef2ff; border:1px solid #c7d2fe;
+    border-radius:999px; padding:6px 12px; font-size:13px; color:#1f2937;
+    box-shadow:0 1px 0 rgba(0,0,0,0.03);
+  }
+  .call.missed .pill{ background:#fee2e2; border-color:#fecaca; color:#991b1b; }
+  .call .icon{ font-style:normal; font-size:14px; }
+  
   /* Responsive tweaks */
   @media (max-width:900px){
     .app{ grid-template-columns:1fr; }
