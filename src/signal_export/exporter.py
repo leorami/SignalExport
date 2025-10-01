@@ -402,21 +402,52 @@ def run_export(db: str | Path, src: str | Path, out: str | Path,
 
         mid = r["mid"]
         if mid not in msg_index:
-            seen_msgs += 1
-            if seen_msgs == total_msgs or seen_msgs % 500 == 0:
-                _progress("Messages", seen_msgs, total_msgs, start_msg)
             t = (r["mtype"] or "").lower()
             is_out = bool("out" in t or r["is_me_change"] == 1)
             sender = "me" if is_out else resolve_sender(r["msource_service"] or r["msource"] or "")
+
+            body_raw = (r["body"] or "").strip()
+            lb = body_raw.lower()
+            
+            # Primary detection: message type is call-history
+            is_call_type = ("call" in t) or (t == "call-history")
+            # Secondary detection: body content suggests call (more specific patterns)
+            call_patterns = [
+                "incoming call", "outgoing call", "missed call",
+                "incoming voice call", "outgoing voice call", "missed voice call",
+                "incoming video call", "outgoing video call", "missed video call",
+                "voice call", "video call"
+            ]
+            exact_matches = {"call", "audio", "video"}
+            body_suggests_call = any(pattern in lb for pattern in call_patterns) or lb in exact_matches
+            
+            looks_call = is_call_type or body_suggests_call
+            is_video = ("video" in t) or ("video" in lb) or (lb == "video")
+            missed = ("miss" in t) or ("miss" in lb) or ("missed" in lb)
+
+            base = None
+            if looks_call:
+                if missed:
+                    base = "Missed video call" if is_video else "Missed voice call"
+                    is_out = False
+                elif is_out:
+                    base = "Outgoing video call" if is_video else "Outgoing voice call"
+                else:
+                    base = "Incoming video call" if is_video else "Incoming voice call"
+
             msg = {
                 "id": mid,
                 "ts": int(r["sent_at"] or 0),
                 "sender": sender,
                 "out": is_out,
-                "body": r["body"] or "",
+                "body": (base if base else body_raw),
                 "atts": [],
                 "group": bool(is_group.get(r["cid"], False)),
             }
+            if base:
+                msg["kind"] = "call"
+                msg["video"] = bool(is_video)
+                msg["missed"] = bool(missed)
             msg_index[mid] = msg
             threads[label].append(msg)
 
@@ -477,22 +508,26 @@ def run_export(db: str | Path, src: str | Path, out: str | Path,
         col_cid = next((x for x in ("conversationId", "cid", "threadId") if x in cols), None)
         col_ts  = next((x for x in ("timestamp", "startedAt", "startTimestamp", "sent_at", "time") if x in cols), None)
         col_ty  = next((x for x in ("type", "callType", "direction", "status") if x in cols), None)
-        col_du  = next((x for x in ("duration", "callDurationSeconds") if x in cols), None)
+        col_du  = next((x for x in ("duration", "callDurationSeconds", "endedTimestamp") if x in cols), None)
+        col_peer = next((x for x in ("peerId", "ringerId", "startedById") if x in cols), None)
 
         if col_cid and col_ts and col_ty:
             cur.execute(f"SELECT {col_cid} AS cid, {col_ts} AS ts, {col_ty} AS ctype, {col_du} AS dur FROM callsHistory ORDER BY {col_cid}, {col_ts}")
             for row in cur.fetchall():
                 label = safe(conv_name.get(row["cid"]) or f"conv:{row['cid']}")
                 t = (row["ctype"] or "").lower()
+                is_video = ("video" in t)
+                missed = ("miss" in t)
                 outb = ("out" in t or "placed" in t)
-                if "miss" in t:
-                    body, outb = "Missed call", False
-                elif "out" in t or "placed" in t:
-                    body = "Outgoing call"
-                elif "in" in t or "received" in t:
-                    body = "Incoming call"
+                if missed:
+                    base = "Missed video call" if is_video else "Missed voice call"
+                    outb = False
+                elif outb:
+                    base = "Outgoing video call" if is_video else "Outgoing voice call"
+                elif ("in" in t or "received" in t):
+                    base = "Incoming video call" if is_video else "Incoming voice call"
                 else:
-                    body = row["ctype"] or "Call"
+                    base = "Call"
                 ts = int(row["ts"] or 0)
                 ts = ts if ts > 10_000 else ts * 1000
                 threads.setdefault(label, []).append({
@@ -500,9 +535,45 @@ def run_export(db: str | Path, src: str | Path, out: str | Path,
                     "ts": ts,
                     "sender": "me" if outb else "",
                     "out": outb,
-                    "body": body,
+                    "body": base,
+                    "kind": "call",
+                    "missed": missed,
+                    "video": is_video,
                     "atts": [],
                     "group": bool(is_group.get(row["cid"], False)),
+                })
+        elif col_peer and col_ts and col_ty:
+            # Fallback: map by a peer identifier to a person label via resolve_sender
+            cur.execute(f"SELECT {col_peer} AS pid, {col_ts} AS ts, {col_ty} AS ctype, {col_du} AS dur FROM callsHistory ORDER BY {col_ts}")
+            for row in cur.fetchall():
+                name = resolve_sender(row["pid"])
+                label = safe(name or "Call")
+                t = (row["ctype"] or "").lower()
+                is_video = ("video" in t)
+                missed = ("miss" in t)
+                outb = ("out" in t or "placed" in t)
+                if missed:
+                    base = "Missed video call" if is_video else "Missed voice call"
+                    outb = False
+                elif outb:
+                    base = "Outgoing video call" if is_video else "Outgoing voice call"
+                elif ("in" in t or "received" in t):
+                    base = "Incoming video call" if is_video else "Incoming voice call"
+                else:
+                    base = "Call"
+                ts = int(row["ts"] or 0)
+                ts = ts if ts > 10_000 else ts * 1000
+                threads.setdefault(label, []).append({
+                    "id": f"call-{ts}",
+                    "ts": ts,
+                    "sender": "me" if outb else "",
+                    "out": outb,
+                    "body": base,
+                    "kind": "call",
+                    "missed": missed,
+                    "video": is_video,
+                    "atts": [],
+                    "group": False,
                 })
 
     for k in list(threads.keys()):
@@ -520,7 +591,11 @@ def run_export(db: str | Path, src: str | Path, out: str | Path,
             "avatar": (thread_avatar.get(label) or ""),
             "avatarEncrypted": bool(thread_avatar_enc.get(label, False)),
             "messages": [
-                {"ts": m["ts"], "sender": m["sender"], "out": m["out"], "body": m["body"], "atts": m["atts"], "group": m["group"]}
+                {
+                    "ts": m["ts"], "sender": m["sender"], "out": m["out"], "body": m["body"], 
+                    "atts": m["atts"], "group": m["group"],
+                    "kind": m.get("kind"), "video": m.get("video", False), "missed": m.get("missed", False)
+                }
                 for m in msgs
             ],
         })
