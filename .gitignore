@@ -27,5 +27,3 @@ out/
 # Coverage
 .coverage*
 coverage*
-/tests/data/
-/tests/output/
