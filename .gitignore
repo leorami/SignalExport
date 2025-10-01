@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.pyc
+
+# Environments
+.venv/
+venv/
+.env
+
+# macOS
+.DS_Store
+
+# Builds
+build/
+dist/
+*.egg-info/
+
+# Project outputs
+*.sqlite
+signal_plain.sqlite*
+signal_export_html/
+.artifacts/
+out/
+
+# Coverage
+.coverage*
+coverage*

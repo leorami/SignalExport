@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Signal Export</title>
+<link rel="apple-touch-icon" sizes="180x180" href="https://signal.org/assets/images/favicon/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="https://signal.org/assets/images/favicon/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="https://signal.org/assets/images/favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="https://signal.org/assets/images/favicon/favicon-16x16.png">
+<link rel="mask-icon" href="https://signal.org/assets/images/favicon/safari-pinned-tab.svg" color="#3b45fd">
+
+<style>
+/*__INLINE_CSS__*/
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <a class="logo" href="https://signal.org" target="_blank" rel="noopener">
+        <img src="https://signal.org/assets/images/header/logo.png" alt="Signal" />
+      </a>
+      <div>Export</div>
+    </div>
+
+    <div class="label">Chats</div>
+    <div class="search"><input id="q" placeholder="Search conversations" /></div>
+
+    <div id="known-section" class="section">Known</div>
+    <ul id="known" class="threadlist"></ul>
+
+    <div id="unknown-toggle" class="toggle">Show Unknown ▼</div>
+    <div id="unknown-section" class="section" style="display:none">Unknown</div>
+    <ul id="unknown" class="threadlist" style="display:none"></ul>
+  </aside>
+
+  <section class="main">
+    <div class="header">
+      <div id="title" class="title">Select a conversation</div>
+      <div class="count" id="count"></div>
+      <div class="stamp" id="stamp"></div>
+    </div>
+    <div id="msgs" class="msgs"><div class="container"></div></div>
+  </section>
+</div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script id="meta" type="application/json">{"exportedOn":"__STAMP__"}</script>
+<script>
+const data = JSON.parse(document.getElementById('data').textContent);
+const meta = JSON.parse(document.getElementById('meta').textContent);
+document.getElementById('stamp').textContent = 'Exported on ' + meta.exportedOn;
+
+const knownEl   = document.getElementById('known');
+const unknownEl = document.getElementById('unknown');
+const unkToggle = document.getElementById('unknown-toggle');
+const msgsEl    = document.getElementById('msgs');
+const titleEl   = document.getElementById('title');
+const countEl   = document.getElementById('count');
+const qEl       = document.getElementById('q');
+
+let active  = null;
+let known   = data.filter(t => !t.unknown);
+let unknown = data.filter(t =>  t.unknown);
+
+function initials(name){
+  return (name||'').split(/\s+/).slice(0,2).map(s => s[0]?.toUpperCase() || '').join('');
+}
+
+function liAvatar(t){
+  // Show initials for now (disabled avatar images)
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  dot.textContent = initials(t.thread);
+  return dot;
+}
+
+// Convert URLs in plain text into clickable links while preventing HTML injection.
+function linkify(text){
+  const frag = document.createDocumentFragment();
+  if(!text){ return frag; }
+  const urlRe = /(?:https?:\/\/|www\.)[\w\-\.\?\,\/%#&=:\+~@!$'\(\)\*;]+/gi;
+  let last = 0;
+  text.replace(urlRe, (match, idx) => {
+    if(idx > last){ frag.appendChild(document.createTextNode(text.slice(last, idx))); }
+    let href = match.startsWith('www.') ? ('https://' + match) : match;
+    const a = document.createElement('a');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.textContent = match;
+    frag.appendChild(a);
+    last = idx + match.length;
+    return match;
+  });
+  if(last < text.length){ frag.appendChild(document.createTextNode(text.slice(last))); }
+  return frag;
+}
+
+function renderList(list, el){
+  el.innerHTML = '';
+  list.forEach(t => {
+    const li  = document.createElement('li');
+    li.dataset.thread = t.thread;
+
+    const left = liAvatar(t);
+    const nm   = document.createElement('div');
+    nm.className = 'name';
+    nm.textContent = t.thread;
+
+    li.append(left, nm);
+    if (active && active.thread === t.thread) li.classList.add('active');
+    li.onclick = () => { active = t; refreshLists(); renderThread(t); };
+    el.appendChild(li);
+  });
+}
+
+function refreshLists(){
+  const q = (qEl.value || '').trim().toLowerCase();
+  const k = known.filter(t => (t.thread||'').toLowerCase().includes(q));
+  const u = unknown.filter(t => (t.thread||'').toLowerCase().includes(q));
+  renderList(k, knownEl);
+  if (unknownEl.style.display !== 'none') renderList(u, unknownEl);
+}
+
+unkToggle.onclick = () => {
+  const open = unknownEl.style.display === 'none';
+  unknownEl.style.display = open ? 'block' : 'none';
+  document.getElementById('unknown-section').style.display = open ? 'block' : 'none';
+  unkToggle.textContent = open ? 'Hide Unknown ▲' : 'Show Unknown ▼';
+  if (open) renderList(unknown, unknownEl);
+};
+
+function dayKey(ms){ return new Date(ms).toLocaleDateString(); }
+function timeText(ms){ const d = new Date(ms); return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+
+function renderThread(t){
+  titleEl.textContent = t.thread;
+  countEl.textContent = t.messages.length + ' messages';
+
+  const container = msgsEl.querySelector('.container');
+  container.innerHTML = '';
+
+  let lastDay = null;
+  t.messages.forEach(m => {
+    const dk = dayKey(m.ts);
+    if (dk !== lastDay){
+      lastDay = dk;
+      const day = document.createElement('div'); day.className = 'day';
+      const chip = document.createElement('span'); chip.textContent = dk;
+      day.appendChild(chip); container.appendChild(day);
+    }
+
+    const wrap = document.createElement('div'); wrap.className = 'msg' + (m.out ? ' me' : '');
+
+    if (m.group && !m.out){
+      const s = document.createElement('div'); s.className = 'sender'; s.textContent = m.sender || '';
+      wrap.appendChild(s);
+    }
+
+    if (m.body){
+      const body = document.createElement('div');
+      body.appendChild(linkify(m.body));
+      wrap.appendChild(body);
+    }
+
+    const atts = document.createElement('div'); atts.className = 'atts';
+    (m.atts||[]).forEach(a=>{
+      if(!a.path) return;
+      const row = document.createElement('div');
+      row.style.display='flex';
+      row.style.alignItems='center';
+      row.style.gap='8px';
+      row.style.marginTop='6px';
+
+      const isImgType = (a.mime && a.mime.startsWith('image/'));
+      if(isImgType){
+        // For now, disable image thumbnails and links: show archive icon + plain filename
+        const icon = document.createElement('div');
+        icon.textContent = '📦';
+        icon.className = 'att-icon';
+        icon.title = 'This looks encrypted or unreadable';
+        const name = document.createElement('span');
+        name.textContent = (a.name || a.path).split('/').pop();
+        name.style.color = '#6b7280';
+        row.appendChild(icon);
+        row.appendChild(name);
+      } else {
+        // Non-image attachments behave as before
+        let thumb;
+        thumb = document.createElement('div');
+        thumb.textContent = a.icon || '📁';
+        thumb.className = 'att-icon';
+
+        const link = document.createElement('a');
+        link.href = a.path; link.target='_blank'; link.rel='noopener';
+        link.textContent = (a.name || a.path).split('/').pop();
+        link.style.textDecoration='none';
+        link.style.color= a.likelyEncrypted ? '#b45309' : '#2563eb';
+        if(a.likelyEncrypted){ link.title = 'This looks encrypted or unreadable'; }
+
+        row.appendChild(thumb);
+        row.appendChild(link);
+      }
+
+      if(a.originalPath && a.path!==a.originalPath){
+        const small=document.createElement('div'); small.textContent='(decrypted preview)';
+        small.className='dec-note';
+        row.appendChild(small);
+      }
+      atts.appendChild(row);
+    });
+    if (atts.children.length) wrap.appendChild(atts);
+
+    const clock = document.createElement('span');
+    clock.className = 'clock';
+    clock.textContent = timeText(m.ts);
+    wrap.appendChild(clock);
+
+    container.appendChild(wrap);
+  });
+
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+known.sort((a,b)=>a.thread.localeCompare(b.thread));
+unknown.sort((a,b)=>a.thread.localeCompare(b.thread));
+refreshLists();
+qEl.addEventListener('input', refreshLists);
+</script>
+</html>

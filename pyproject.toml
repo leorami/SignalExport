@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "signal-export"
+version = "0.1.0"
+description = "Signal Desktop export to a responsive HTML viewer"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+  { name = "Leo A. Ramirez Jr.", email = "leo.ramirez@alumni.stanford.edu" }
+]
+keywords = ["signal", "export", "sqlite", "html", "attachments"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7",
+  "coverage>=7",
+]
+
+[project.scripts]
+signal-export = "signal_export.cli:main"
+
+[tool.setuptools.package-data]
+signal_export = [
+  "assets/*.html",
+  "assets/*.css",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

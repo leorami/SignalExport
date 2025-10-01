@@ -1,0 +1,253 @@
+/* ============================================================================
+   Signal Export — Light Theme + Layout
+   Author:  Leo A. Ramirez Jr. (leo.ramirez@alumni.stanford.edu)
+   Purpose: readable, maintainable, responsive; only the conversation scrolls.
+   ============================================================================ */
+
+/* -------------------------
+   Tokens / Theme (light)
+   ------------------------- */
+   :root{
+    --sidebar:#f5f6f8;          /* left panel bg  */
+    --sidebar-border:#e5e7eb;   /* left panel dividers */
+    --text:#0b0c0f;             /* default text color */
+    --muted:#6b7280;            /* secondary text */
+    --main-bg:#ffffff;          /* main area background */
+    --bubble-in:#f1f5f9;        /* incoming bubble */
+    --bubble-out:#2484ff;       /* outgoing bubble */
+    --text-in:#0b0c0f;          /* text inside incoming bubble */
+    --text-out:#ffffff;         /* text inside outgoing bubble */
+    --divider:#e5e7eb;          /* hairline separators */
+    --link:#2563eb;             /* default link color */
+    --link-contrast:#eaf2ff;    /* subtle bg hover */
+  }
+  
+  /* Global box model + lock document scroll (only conversation pane scrolls) */
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; overflow:hidden; }
+  body{
+    margin:0;
+    background:var(--main-bg);
+    color:var(--text);
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  
+  /* -------------------------
+     Grid Shell
+     ------------------------- */
+  .app{
+    display:grid;
+    grid-template-columns:minmax(260px,360px) minmax(320px,1fr);
+    height:100vh; /* full viewport height */
+  }
+  
+  /* -------------------------
+     Sidebar (left)
+     - If you want the sidebar to scroll independently, keep overflow:auto.
+     - If you want only conversation to scroll, switch this to overflow:hidden.
+     ------------------------- */
+  .sidebar{
+    background:var(--sidebar);
+    border-right:1px solid var(--sidebar-border);
+    overflow:auto;
+  }
+  
+  /* Brand header */
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--sidebar-border);
+  }
+  .brand .logo{
+    display:inline-flex; align-items:center; justify-content:center;
+    height:36px; width:auto; overflow:hidden;
+  }
+  .brand .logo img{ height:36px; width:auto; display:block; }
+  
+  /* Make brand/label/search sticky so the thread list scrolls under them */
+  .brand, .label, .search{
+    position:sticky; top:0; z-index:1; background:var(--sidebar);
+  }
+  .label{ top:48px; }
+  .search{ top:72px; }
+  
+  /* Chats label */
+  .label{
+    padding:8px 14px 0 14px;
+    font-weight:700;
+    color:#374151;
+  }
+  
+  /* Search */
+  .search{
+    padding:8px 10px 12px 10px;
+    border-bottom:1px solid var(--sidebar-border);
+  }
+  .search input{
+    width:100%;
+    padding:10px 12px;
+    border-radius:12px;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:var(--text);
+    outline:none;
+  }
+  
+  /* Thread lists */
+  .section{
+    padding:8px 12px;
+    color:var(--muted);
+    font-weight:600;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    border-top:1px solid var(--sidebar-border);
+  }
+  .threadlist{ list-style:none; margin:0; padding:0; }
+  .threadlist li{
+    padding:12px 14px;
+    cursor:pointer;
+    border-bottom:1px solid var(--sidebar-border);
+    display:flex; align-items:center; gap:10px;
+  }
+  .threadlist li .dot{
+    width:28px; height:28px; border-radius:999px;
+    background:#e5e7eb;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px; color:#374151;
+  }
+  .threadlist li .name{
+    flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .threadlist li.active{ background:#dde7ff; }
+  
+  /* Avatars in the sidebar */
+  .threadlist li .avatar{
+    width:28px; height:28px; border-radius:50%;
+    object-fit:cover; border:1px solid #ddd;
+  }
+  
+  /* Encrypted avatar badge */
+.enc-badge{
+  position:absolute;
+  right:-6px;
+  bottom:-6px;
+  background:#f59e0b;
+  color:#111827;
+  font-size:10px;
+  line-height:1;
+  padding:2px 4px;
+  border-radius:999px;
+  border:1px solid #d97706;
+}
+
+  .toggle{
+    color:var(--muted);
+    font-size:12px;
+    cursor:pointer;
+    padding:8px 14px;
+  }
+  
+  /* -------------------------
+     Main (right)
+     ------------------------- */
+  .main{
+    display:flex; flex-direction:column;
+    min-width:0;           /* let children shrink */
+    overflow:hidden;       /* prevent the main area from scrolling */
+  }
+  
+  /* Header row (title, count, timestamp) */
+  .header{
+    padding:12px 16px;
+    border-bottom:1px solid var(--divider);
+    display:flex; align-items:center; gap:12px;
+    background:#fff;
+  }
+  .title{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .count{ color:var(--muted); font-size:12px; margin-left:auto; margin-right:12px; }
+  .stamp{ color:var(--muted); font-size:12px; }
+  
+  /* Conversation scroller (ONLY this element scrolls) */
+  .msgs{
+    flex:1; min-height:0;
+    overflow:auto;
+    background:var(--main-bg);
+  }
+  
+  /* Content width + padding inside scroller */
+  .container{
+    max-width:920px; margin:0 auto; padding:18px;
+  }
+  
+  /* Day chips */
+  .day{ text-align:center; margin:18px 0; }
+  .day span{
+    background:#f3f4f6; color:#374151;
+    padding:6px 12px; border-radius:999px;
+    border:1px solid var(--divider);
+    font-size:12px;
+  }
+  
+  /* Message bubbles */
+  .msg{
+    max-width:68%;
+    margin:10px 0;
+    padding:10px 12px 6px;
+    border-radius:16px;
+    background:var(--bubble-in);
+    color:var(--text-in);
+    border:1px solid #e5e7eb;
+    position:relative;
+    word-wrap:break-word; white-space:pre-wrap;
+  }
+  .msg.me{
+    margin-left:auto;
+    background:var(--bubble-out);
+    border-color:#1f6fda;
+    color:var(--text-out);
+  }
+
+  /* Links in message bodies */
+  .msg a{
+    color:var(--link);
+    text-decoration:underline;
+    word-break:break-word;
+  }
+  .msg.me a{
+    color:#eaf2ff;
+  }
+  .msg a:hover{
+    background:var(--link-contrast);
+  }
+  
+  /* Sender label (group chats) */
+  .sender{
+    font-size:12px; font-weight:700; margin-bottom:4px; color:#374151;
+  }
+  
+  /* Attachment rows */
+  .atts a{
+    display:block; margin-top:6px;
+    font-size:13px; text-decoration:none; color:#2563eb;
+    overflow:hidden; text-overflow:ellipsis; word-break:break-all;
+  }
+  .att-icon{
+    font-size:22px; width:28px; text-align:center;
+  }
+  .dec-note{
+    font-size:11px; color:#6b7280;
+  }
+  
+  /* Timestamp (inside bubble, bottom-right) */
+  .clock{
+    display:block; text-align:right;
+    font-size:11px; margin-top:6px; opacity:.75;
+  }
+  
+  /* Responsive tweaks */
+  @media (max-width:900px){
+    .app{ grid-template-columns:1fr; }
+    .container{ padding:12px; }
+    .msg{ max-width:92%; }
+  }
