@@ -4,10 +4,10 @@
 
 ## What it does
 
-- Decrypts Signal Desktop data into a plain SQLite (via `signalbackup-tools`)
+- Decrypts Signal Desktop data into a plain SQLite using [signalbackup-tools](https://github.com/bepaald/signalbackup-tools) by [@bepaald](https://github.com/bepaald)
 - Builds a responsive, light-themed HTML viewer of your conversations
 - Copies attachments; best-effort decrypts certain unreadable blobs (if keys available)
-- Includes call events (incoming/outgoing/missed)
+- Includes call events (incoming/outgoing/missed) rendered as centered chips
 - Shows a clean UI with searchable thread list and grouped messages
 
 Current limitations (intentional, for safety and clarity):
@@ -48,9 +48,13 @@ Current limitations (intentional, for safety and clarity):
 
 ## Requirements
 
-- Python 3.12+ (latest stable Python 3)
-- For macOS end-to-end flow: Homebrew + `signalbackup-tools` for DB decryption
+- Python 3.9+ (tested on 3.9-3.12)
+- For macOS end-to-end flow: Homebrew + [`signalbackup-tools`](https://github.com/bepaald/signalbackup-tools) for DB decryption
 - Optional: OpenSSL CLI on PATH (improves best-effort decryption)
+
+## Credits
+
+This project relies on the excellent [signalbackup-tools](https://github.com/bepaald/signalbackup-tools) by [@bepaald](https://github.com/bepaald) for decrypting Signal Desktop databases. Without this tool, none of this would be possible.
 
 ## Configuration (.env and environment variables)
 

@@ -5,13 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "signal-export"
 version = "0.1.0"
-description = "Signal Desktop export to a responsive HTML viewer"
+description = "Export Signal Desktop conversations to a responsive HTML viewer with call events, attachments, and search"
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [
   { name = "Leo A. Ramirez Jr.", email = "leo.ramirez@alumni.stanford.edu" }
 ]
-keywords = ["signal", "export", "sqlite", "html", "attachments"]
+keywords = [
+  "signal", "signal-messages", "signal-desktop", "signal-backup", "signal-app",
+  "export", "sqlite", "html", "attachments", "conversations", "chat-export",
+  "messaging", "backup", "viewer", "responsive-ui"
+]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
